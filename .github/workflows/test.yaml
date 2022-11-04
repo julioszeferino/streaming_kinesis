@@ -1,0 +1,49 @@
+name: Test
+
+# quando ele sera executado
+# sempre que houver um push na branch master
+on:
+  pull_request:
+    branches: [master]
+
+env:
+  AWS_REGION: "us-east-2"
+
+permissions:
+  contents: read
+
+# steps da esteira de deploy
+jobs:
+  test:
+    name: Test infra on PR
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v3
+
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v1
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ env.AWS_REGION }}
+
+    # instalando o python 3.8
+    - name: Set up Python 3.8
+      uses: actions/setup-python@v2
+      with:
+        python-version: 3.8
+
+    # instalando o terraform
+    - name: Hashicorp - Setup terraform
+      uses: hashicorp/setup-terraform@v1.2.1 
+
+    - name: IaC Apply
+      env:
+        COMMAND_IAC: terraform
+      run: |
+        cd infrastructure
+        $COMMAND_IAC init
+        $COMMAND_IAC validate
+        $COMMAND_IAC plan
